@@ -1,6 +1,7 @@
 require "sinatra"
 require "sinatra/reloader"
 require "tilt/erubis" # used for templating?
+require 'pry'
 
 get "/" do
   # File.read "public/template.html"
@@ -9,10 +10,10 @@ get "/" do
   erb :home
 end
 
-get "/chapters/1" do
-  @title    = "Chapter 1"
+get "/chapters/:number" do
+  @title    = "Chapter #{params['number']}"
   @contents = File.readlines('data/toc.txt')
-  @chapter  = File.read('data/chp1.txt')
+  @chapter  = File.read("data/chp#{params['number']}.txt")
 
   erb :chapter
 end
