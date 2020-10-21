@@ -11,30 +11,41 @@ end
 helpers do
   # This can be used directly in view templates (see views/chapter.erb)
   def in_paragraphs(content)
-    content.split("\n\n").map do |paragraph|
-      "<p>#{paragraph}</p>"
+    content.split("\n\n").map.with_index do |paragraph, i|
+      "<p id=#{i}>#{paragraph}</p>"
     end.join
   end
 
-  def each_chapter
-    @contents.each_with_index do |name, index|
-      number = index + 1
-      contents = File.read("data/chp#{number}.txt")
-      yield number, name, contents
+  def in_matched_paragraphs(paragraphs, ch_number)
+    paragraphs = paragraphs.map do |paragraph|
+      "<li>" + "<a href='/chapters/#{ch_number}##{paragraph[0]}'>#{paragraph[1]}</a>" + "</li>"
+    end.join
+    "<ul>#{paragraphs}</ul>"
+  end
+end
+
+def each_chapter
+  @contents.each_with_index do |name, index|
+    number = index + 1
+    contents = File.read("data/chp#{number}.txt").split("\n\n")
+    contents = contents.map.with_index do |par, index|
+      [index, par]
     end
+    yield number, name, contents
+  end
+end
+
+def chapters_matching(str)
+  results = []
+
+  return results if !str || str.empty?
+
+  each_chapter do |number, name, contents|
+    contents.select! { |content| content[1].include?(str) }
+    results << {number: number, name: name, contents: contents} unless contents.empty?
   end
 
-  def chapters_matching(str)
-    results = []
-
-    return results if !str || str.empty?
-
-    each_chapter do |number, name, contents|
-      results << {number: number, name: name} if contents.include?(str)
-    end
-
-    results
-  end
+  results
 end
 
 not_found do
@@ -47,10 +58,6 @@ get "/" do
 end
 
 get "/search" do
-  # Now, add some code to the new route that checks if any of the chapters
-  # contain whatever text is entered into the search form. Render a list of
-  # links to the matching chapters in the template.
-
   @results = chapters_matching(params[:query])
   erb :search_form
 end
